@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:snake_full/models/game/game_model.dart';
@@ -11,9 +13,15 @@ class GameController {
     return viewModel.snake.body.last;
   }
 
-  Cordinate food(BuildContext context) {
+  List<Cordinate> foods(BuildContext context) {
     GameModel viewModel = Provider.of<GameModel>(context, listen: false);
-    return viewModel.food;
+    return viewModel.foods;
+  }
+
+  List<Cordinate> obstacles(BuildContext context) {
+    GameModel viewModel = Provider.of<GameModel>(context, listen: false);
+
+    return viewModel.obstacles;
   }
 
   List<Cordinate> body(BuildContext context) {
@@ -22,9 +30,10 @@ class GameController {
     return viewModel.snake.body;
   }
 
-  void setDirection(BuildContext context, Direction direction) {
+  void move(BuildContext context, Direction direction) {
     GameModel viewModel = Provider.of<GameModel>(context, listen: false);
-    viewModel.setDirection(direction);
+
+    viewModel.move(direction);
   }
 
   void showGameOver(BuildContext context,
@@ -32,6 +41,25 @@ class GameController {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.red,
+        content: Text(message),
+        action: SnackBarAction(
+          label: "Restart",
+          onPressed: () {
+            GameModel viewModel =
+                Provider.of<GameModel>(context, listen: false);
+            viewModel.restart();
+          },
+        ),
+      ),
+    );
+  }
+
+  void howHighScoreBeaten(BuildContext context,
+      {String message =
+          "New Score achieved . Congratulation !!. Click here to restart"}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.orange,
         content: Text(message),
         action: SnackBarAction(
           label: "Restart",
@@ -68,5 +96,15 @@ class GameController {
   GameState gameState(BuildContext context) {
     GameModel viewModel = Provider.of<GameModel>(context, listen: false);
     return viewModel.status;
+  }
+
+  double speed(BuildContext context) {
+    GameModel viewModel = Provider.of<GameModel>(context, listen: false);
+    return (1.1 - viewModel.speed) * 10;
+  }
+
+  int highestScore(BuildContext context) {
+    GameModel viewModel = Provider.of<GameModel>(context, listen: false);
+    return viewModel.highestScore;
   }
 }

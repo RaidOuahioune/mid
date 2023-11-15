@@ -5,27 +5,47 @@ import 'package:snake_full/models/game/snake.dart';
 
 enum Direction { up, down, left, right }
 
-enum GameState { playing, pause, gameover }
+enum GameState { playing, pause, gameover, highscore }
 
 class GameModel extends ChangeNotifier {
   int xSize, ySize;
+
+  double speed = 1;
   GameState status = GameState.playing;
   int _score = 0;
   int get score => _score;
-  late Cordinate food;
   late Timer _timer;
-  Direction direction = Direction.right; //right,
+
+  int obstacleNumber = 1;
+
+  int highestScore = 0;
+
+  int foodInterval = 0;
+
+  List<Cordinate> obstacles = [];
+  List<Cordinate> foods = [];
   Snake snake = Snake();
   int x = 0; //head
   int y = 0;
+
   GameModel({required this.xSize, required this.ySize}) {
-    generateFood();
-    _timer = Timer.periodic(const Duration(milliseconds: 400), (t) {
-      move();
+    _timer =
+        Timer.periodic(Duration(milliseconds: (1000 * speed).toInt()), (t) {
+      _int();
     });
   }
 
-  Cordinate _move() {
+  void _int() {
+    if (foodInterval == 0) {
+      generateFoods();
+    }
+    foodInterval++;
+    foodInterval %= 5;
+    controlFood();
+    controlObstacles();
+  }
+
+  Cordinate _move(Direction direction) {
     switch (direction) {
       case Direction.up:
         x--;
@@ -47,62 +67,46 @@ class GameModel extends ChangeNotifier {
     return Cordinate(x: x, y: y);
   }
 
-  void move() {
-    Cordinate newHead = _move();
-    if (newHead == food) {
-      snake.eat(food);
-      _score++;
-      generateFood();
+  void move(Direction direction) {
+    if (status == GameState.gameover || status == GameState.highscore) {
+      return;
     }
+    Cordinate newHead = _move(direction);
     snake.move(newHead);
-    if (snake.isDead()) {
-      status = GameState.gameover;
-      _timer.cancel();
-    }
+    checkSnakeCollision();
+    chechFoodEating();
     notifyListeners();
   }
 
-  void generateFood() {
+  void generateFoods() {
     while (true) {
       int xFood = Random().nextInt(xSize);
-      int yFood = Random().nextInt(ySize);
-      food = Cordinate(x: xFood, y: yFood);
-      bool inSnake = false;
-
-      for (Cordinate snakeCell in snake.body) {
-        if (snakeCell == food) {
-          inSnake = true;
-          break;
-        }
+      Cordinate newfood = Cordinate(x: xFood, y: ySize);
+      if (newfood != snake.body.last && !isCellInBody(newfood, foods)) {
+        foods.add(newfood);
+        break;
       }
-      if (inSnake) {
-        continue;
-      } else {
-        return;
-      }
+      notifyListeners();
     }
   }
 
-  void setDirection(Direction direction) {
-    if (direction == Direction.up && this.direction == Direction.down) return;
-    if (direction == Direction.down && this.direction == Direction.up) return;
-    if (direction == Direction.left && this.direction == Direction.right) {
-      return;
+  bool isCellInBody(Cordinate cell, List<Cordinate> body) {
+    for (Cordinate bodyCell in body) {
+      if (cell == bodyCell) {
+        return true;
+      }
     }
-    if (direction == Direction.right && this.direction == Direction.left) {
-      return;
-    }
-    this.direction = direction;
-    notifyListeners();
+    return false;
   }
 
   void restart() {
     snake = Snake();
     x = 0;
     y = 0;
-    direction = Direction.right;
+    speed = 1;
+    obstacles = [];
+    foods = [];
     _score = 0;
-    generateFood();
     resume();
   }
 
@@ -112,12 +116,108 @@ class GameModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resume() {
+  void resume({double speed = 1}) {
     status = GameState.playing;
     notifyListeners();
     _timer.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 400), (t) {
-      move();
+    _timer =
+        Timer.periodic(Duration(milliseconds: (1000 * speed).toInt()), (t) {
+      _int();
     });
+  }
+
+  void generateObstacles() {
+    List<Cordinate> newObstacles = [];
+    for (int i = 0; i < obstacleNumber; i++) {
+      int xObstacle = Random().nextInt(xSize);
+      Cordinate obstacle = Cordinate(x: xObstacle, y: ySize);
+      if (!isCellInBody(obstacle, newObstacles)) {
+        obstacles.add(obstacle);
+      }
+    }
+    obstacles.addAll(newObstacles);
+  }
+
+  void removerObstacles() {
+    List<Cordinate> newObstacles = obstacles.toList();
+    for (Cordinate obstacle in newObstacles) {
+      if (obstacle.y < 0) {
+        newObstacles.remove(obstacle);
+      }
+    }
+    obstacles = newObstacles;
+  }
+
+  void removerFood() {
+    List<Cordinate> newFoods = foods.toList();
+    for (Cordinate food in newFoods) {
+      if (food.y < 0) {
+        newFoods.remove(food);
+      }
+    }
+    foods = newFoods;
+  }
+
+  void moveObstacles() {
+    for (Cordinate obstacle in obstacles) {
+      obstacle.y--;
+    }
+  }
+
+  void moveFoods() {
+    for (Cordinate food in foods) {
+      food.y--;
+    }
+  }
+
+  void newObstackles() {
+    generateObstacles();
+    moveObstacles();
+    notifyListeners();
+  }
+
+  void controlFood() {
+    moveFoods();
+    chechFoodEating();
+  }
+
+  void controlObstacles() {
+    newObstackles();
+    checkSnakeCollision();
+  }
+
+  void checkSnakeCollision() {
+    for (Cordinate obstacle in obstacles) {
+      if (obstacle == snake.body.last) {
+        status = GameState.gameover;
+
+        if (score > highestScore) {
+          status = GameState.highscore;
+          highestScore = score;
+        }
+        _timer.cancel();
+        return;
+      }
+    }
+    notifyListeners();
+  }
+
+  void chechFoodEating() {
+    for (Cordinate food in foods) {
+      if (food == snake.body.last) {
+        food.y = -20;
+        _score++;
+        if (score % 10 == 0) {
+          speed -= 0.1;
+          _timer.cancel();
+          _timer = Timer.periodic(
+              Duration(milliseconds: (1000 * speed).toInt()), (t) {
+            _int();
+          });
+          return;
+        }
+      }
+      notifyListeners();
+    }
   }
 }

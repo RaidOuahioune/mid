@@ -11,14 +11,14 @@ class GridCell extends StatelessWidget {
   Widget build(BuildContext context) {
     GameController viewController = GameController();
     return Container(
-      width: 32,
-      height: 20,
+      width: 15,
+      height: 15,
       decoration: BoxDecoration(
         color: viewController.head(context) == cordinate
             ? Colors.red
-            : viewController.food(context) == cordinate
+            : viewController.foods(context).contains(cordinate)
                 ? Colors.green
-                : viewController.body(context).contains(cordinate)
+                : viewController.obstacles(context).contains(cordinate)
                     ? Colors.blue
                     : Colors.black,
         border: Border.all(

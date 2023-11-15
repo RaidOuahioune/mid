@@ -15,13 +15,13 @@ class Arrow extends StatelessWidget {
       color: Colors.black,
       onPressed: () => {
         if (icon == Icons.keyboard_arrow_up)
-          viewController.setDirection(context, Direction.up)
+          viewController.move(context, Direction.up)
         else if (icon == Icons.keyboard_arrow_down)
-          viewController.setDirection(context, Direction.down)
+          viewController.move(context, Direction.down)
         else if (icon == Icons.keyboard_arrow_left)
-          viewController.setDirection(context, Direction.left)
+          viewController.move(context, Direction.left)
         else if (icon == Icons.keyboard_arrow_right)
-          viewController.setDirection(context, Direction.right),
+          viewController.move(context, Direction.right),
         print("arrow")
       },
       child: Icon(icon),

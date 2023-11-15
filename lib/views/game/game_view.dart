@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:snake_full/controllers/game/game_controller.dart';
-import 'package:snake_full/controllers/game/toggle_controller.dart';
 import 'package:snake_full/models/game/game_model.dart';
-import 'package:snake_full/models/game/toogle_model.dart';
 import 'package:snake_full/views/game/components/arrow.dart';
 import 'package:snake_full/views/game/components/grid_row.dart';
 import 'package:snake_full/views/game/components/resume_restart.dart';
@@ -15,11 +13,9 @@ class GameView extends StatelessWidget {
   Widget build(BuildContext context) {
     GameController viewController = GameController();
 
-    ToggleController toggleController = ToggleController();
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ToggleButtonModel()),
-        ChangeNotifierProvider(create: (_) => GameModel(xSize: 23, ySize: 10))
+        ChangeNotifierProvider(create: (_) => GameModel(xSize: 23, ySize: 20))
       ],
       child: Consumer<GameModel>(
         builder: (context, viewModel, child) {
@@ -27,21 +23,44 @@ class GameView extends StatelessWidget {
             SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
               viewController.showGameOver(context);
             });
+          } else if (viewModel.status == GameState.highscore) {
+            SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
+              viewController.howHighScoreBeaten(context);
+            });
           }
           return Scaffold(
             body: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 30),
                 child: Center(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ResumeRestart(viewController: viewController),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "You Score: ${viewController.score(context)}",
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(
+                              width: 20,
+                            ),
+                            Text(
+                              "Highest Score : ${viewModel.highestScore}",
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold),
+                            )
+                          ],
+                        ),
                         Text(
-                          "You Score: ${viewController.score(context)}",
-                          style: const TextStyle(
-                              color: Colors.black, fontWeight: FontWeight.bold),
+                          "Current Speed: x${viewModel.speed}",
+                          style: const TextStyle(fontSize: 20),
                         ),
                         for (int j = 0; j < 23; j++) GridRow(rowIndex: j),
                         MaterialButton(
@@ -66,27 +85,6 @@ class GameView extends StatelessWidget {
                         ),
                         Arrow(icon: Icons.keyboard_arrow_down),
                         const SizedBox(width: 200, height: 200),
-                        Consumer<ToggleButtonModel>(
-                            builder: (context, viewModel, child) {
-                          return Column(
-                            children: [
-                              ToggleButtons(
-                                  isSelected:
-                                      toggleController.selections(context),
-                                  onPressed: (int index) {
-                                    toggleController.select(context, index);
-                                  },
-                                  children: const [
-                                    Icon(Icons.format_bold),
-                                    Icon(Icons.format_italic),
-                                    Icon(Icons.format_underline)
-                                  ]),
-                              Text(
-                                  "This Is A Simple Text,Press Buttons Up And See What Gonna Happen",
-                                  style: toggleController.style(context)),
-                            ],
-                          );
-                        }),
                       ]),
                 ),
               ),
